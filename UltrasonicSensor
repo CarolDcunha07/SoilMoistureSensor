@@ -1,0 +1,40 @@
+const int triggerPin = 9;
+const int echoPin = 10;
+const int thresholdDistance = 30; // set threshold distance in centimeters
+int lamp= LED_BUILTIN;
+int buzz=6;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(triggerPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  pinMode(lamp,OUTPUT);
+  pinMode(buzz,OUTPUT);
+}
+
+void loop() {
+  digitalWrite(triggerPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(triggerPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(triggerPin, LOW);
+  
+  long duration = pulseIn(echoPin, HIGH);
+  
+  // calculate distance in cm
+  int distance = duration * 0.034 / 2;
+  
+  if (distance < thresholdDistance) {
+    digitalWrite(lamp,HIGH);
+    digitalWrite(buzz,HIGH);
+    Serial.print("Obstacle detected at ");
+    Serial.print(distance);
+    Serial.println(" cm");
+  } else {
+    digitalWrite(lamp,LOW);
+    digitalWrite(buzz,LOW);
+    Serial.println("No obstacle detected");
+  }
+  
+  delay(500); // wait for 500 milliseconds
+}
