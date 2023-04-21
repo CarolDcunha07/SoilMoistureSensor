@@ -1,0 +1,56 @@
+#include <ESP32Servo.h>
+
+// Define pins
+#define trigPin 9
+#define echoPin 10
+#define servoPin 16
+
+// Define variables
+long duration;
+int distance;
+int servoAngle = 0;
+int servoIncrement = 5; // Angle increment for servo movement
+int threshold = 30; // Threshold distance in centimeters
+Servo myServo;
+
+void setup() {
+  // Setup pins
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  myServo.attach(servoPin);
+  
+  // Setup serial communication
+  Serial.begin(9600);
+}
+
+void loop() {
+  // Move servo motor
+  for (servoAngle = 0; servoAngle <= 90; servoAngle += 1) {
+    myServo.write(servoAngle);
+    delay(15);
+
+    // Trigger ultrasonic sensor
+    digitalWrite(trigPin, LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigPin, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPin, LOW);
+    
+    // Calculate distance
+    duration = pulseIn(echoPin, HIGH);
+    distance = duration * 0.034 / 2;
+  
+    // Check if obstacle is detected
+    if (distance < threshold) {
+      Serial.print("Obstacle detected at angle: ");
+      Serial.println(servoAngle);
+      break;
+    }
+  }
+  
+  // Move servo back to starting position
+  for (servoAngle = 90; servoAngle >= 0; servoAngle -= 1) {
+    myServo.write(servoAngle);
+    delay(50);
+  }
+}
