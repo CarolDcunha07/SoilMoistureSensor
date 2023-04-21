@@ -1,0 +1,97 @@
+#include <WiFi.h>
+#include <DHT.h>
+
+const char* ssid = "Galaxy";    // Enter your Wi-Fi network name (SSID)
+const char* password = "futurelearn"; // Enter your Wi-Fi password
+const char* server = "api.thingspeak.com";
+const String apiKey = "B8CAAUR5XPZ16OVX"; // Enter your ThingSpeak API key
+const int analogInPin = A0;  // Analog input pin that the soil moisture sensor is connected to
+const int thresholdDistance = 50;
+#define DHTPIN 16
+#define DHTTYPE DHT11
+#define TRIGGER_PIN 9
+#define ECHO_PIN 10
+// Initialize DHT sensor
+DHT dht(DHTPIN, DHTTYPE);
+void setup() {
+  Serial.begin(115200);
+  delay(10);
+
+  // Connect to Wi-Fi network
+  Serial.println();
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+
+   dht.begin();
+     // Set trigger pin as output
+  pinMode(TRIGGER_PIN, OUTPUT);
+  digitalWrite(TRIGGER_PIN, LOW);
+
+  // Set echo pin as input
+  pinMode(ECHO_PIN, INPUT);
+}
+
+void loop() {
+  // Read soil moisture sensor data
+  int sensorValue = analogRead(analogInPin);
+  Serial.println(sensorValue);
+
+  float temperature = dht.readTemperature();
+  float humidity = dht.readHumidity();
+
+   float duration, distance;
+  digitalWrite(TRIGGER_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIGGER_PIN, LOW);
+  duration = pulseIn(ECHO_PIN, HIGH);
+  distance = duration * 0.034 / 2;
+
+
+  // Send data to ThingSpeak
+  WiFiClient client;
+  const int httpPort = 80;
+  if (!client.connect(server, httpPort)) {
+    Serial.println("Connection failed");
+    return;
+  }
+
+  String postStr = apiKey;
+  postStr += "&field1=";
+  postStr += String(sensorValue);
+  postStr += "\r\n\r\n";
+ postStr += "&field2=";
+    postStr += String(temperature);
+     postStr += "\r\n\r\n";
+    postStr += "&field3=";
+    postStr += String(humidity);
+     postStr += "\r\n\r\n";
+    postStr += "&field4=";
+    postStr += String(distance);
+    postStr += "\r\n";
+
+  client.print("POST /update HTTP/1.1\n");
+  client.print("Host: api.thingspeak.com\n");
+  client.print("Connection: close\n");
+  client.print("X-THINGSPEAKAPIKEY: " + apiKey + "\n");
+  client.print("Content-Type: application/x-www-form-urlencoded\n");
+  client.print("Content-Length: ");
+  client.print(postStr.length());
+  client.print("\n\n");
+  client.print(postStr);
+
+  Serial.println("Data sent to ThingSpeak");
+  delay(3000); // Wait 15 seconds before sending the next set of data
+}
